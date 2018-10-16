@@ -1,5 +1,5 @@
 ---
-title: "Reproduced Correlation Coefficient Matrix"
+title: "Composite Coefficient Correlations"
 output:
   html_notebook: default
   html_document: default
@@ -8,10 +8,15 @@ output:
 #Introduction
 authored by Joshua J Kellogg
 
-This notebook contains the R scripts for calculating the reproduced correlation coefficient (RCC), generating a heatmap of the restulting matrix, and translating the final data matrix for network analysis in Cytoscape.
+This notebook contains the R scripts for calculating the composite coefficient (CC), generating a heatmap of the restulting matrix, and translating the final data matrix for network analysis in Cytoscape.
 
-### Clear previous lists
+### Clear previous lists and load libraries
 ```{r}
+library(tidyverse)
+library(xlsx)
+library(gplots)
+library(ggfortify)
+library(statsr)
 rm(list = ls())
 ```
 
@@ -20,11 +25,13 @@ rm(list = ls())
 ```{r}
 #import data
 RAWdata <- read.csv(file.choose())
+rnames <- RAWdata[,1]     # assign labels in column 1 to "rnames"
+row.names(RAWdata) <- rnames
 #remove first column
 RAWdata.bare <- RAWdata[,-1]
 ```
 
-### Data transformation
+### Data transformation2
 - The data is traditionally transformed by the 4th root to improve any heteroscedastic noise. Note: not all datasets will require this transformation, and some will benefit from data transforms other than 4th root. 
 ```{r}
 #transformation
@@ -164,7 +171,7 @@ df <- rbind(df, newrow)
 df
 nopcs <- readline(prompt="How many princial components in the model?")
 ```
-## Calcuate PC matrices and RCC
+## Calcuate PC matrices and CC
 Compute correlations across chosen principal components
 ```{r}
 PClist <- lapply(1:nopcs, # use 1:ncol(scorescale) if you want all the PCs to be used in the RCC
@@ -176,14 +183,14 @@ Meanestmat <-scale(PCsumroot, center=TRUE, scale=FALSE) #Mean Estimated Matrix r
 # dotprod <- Meanestmat %*% t(Meanestmat) # Calculate dotproduct of two matrices
 normmem <- apply(Meanestmat,1,euclidnorm) # Calculate the norm of the Mean Estimated Matrix
 # dotnorm <- normmem %*% t(normmem) # Dotproduct of the norm
-RCC <- (Meanestmat %*% t(Meanestmat))/(normmem %*% t(normmem))
+CC <- (Meanestmat %*% t(Meanestmat))/(normmem %*% t(normmem))
 
 ```
 ## Heatmap
 ### Reassign the rownames (which were previously omitted)
 ```{r}
 rnames <- RAWdata[,1]                       # assign labels in column 1 to "rnames"
-heat.mat <- data.matrix(RCC[,1:ncol(RCC)])  # transform columns into a matrix
+heat.mat <- data.matrix(CC[,1:ncol(CC)])  # transform columns into a matrix
 heat.mat <- round(heat.mat,3)
 rownames(heat.mat) <- rnames                  # assign row names
 colnames(heat.mat) <- rnames
@@ -205,7 +212,7 @@ heatmap.2(heat.mat,
           key.title = NULL,
           key.xlab = NULL,
           key.ylab = NULL,
-          margins =c(4,4),      # widens margins around plot
+          #margins =c(4,4),      # widens margins around plot
           density.info="none",  # turns off density plot inside color legend
           #breaks=col_breaks,    # enable color transition at specified limits
           trace="none",         # turns off trace lines inside the heat map
@@ -224,18 +231,18 @@ heatmap.2(heat.mat,
          par(oma=c(0,0,0,0), mar=c(.25,.25,.25,.25), mgp=c(0,0,0)))
 ```
 
-## Columnnating RCC datamatrix 
+## Columnnating CC datamatrix 
 - Converting the data, in a matrix format, into a columnar form for Cytoscape import and subsequent network analysis.
 ```{r}
 rnames <- RAWdata[,1]
-rownames(RCC) <- rnames
-colnames(RCC) <- rnames
-CPCA <- as.vector(RCC)
+rownames(CC) <- rnames
+colnames(CC) <- rnames
+CPCA <- as.vector(CC)
 CPCA <- as.matrix(CPCA)
 
 S1 <- rep(rnames,length.out = nrow(CPCA))
 S1 <- as.matrix(S1)
-S2 <- rep(rnames, each=ncol(RCC))
+S2 <- rep(rnames, each=ncol(CC))
 S2 <- as.matrix(S2)
 CPCA <- cbind(CPCA, S1, S2)
 
