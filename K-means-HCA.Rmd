@@ -1,14 +1,34 @@
-library(colorspace) # get nice colors
-library(dendextend) #for dendrogram work
-library(circlize) #to make cyclic dendogram
+---
+title: "R Notebook for calculating k-means clustering and HCA Analyses"
+output: html_notebook
+---
+#Introduction
+authored by Joshua J Kellogg
 
+This notebook contains the R scripts for calculating the k-means clustering statistical analysis and the hierarchical clustering analysis for a dataset.
+
+### Clear previous lists and load libraries
+```{r}
+library(colorspace) 
+library(dendextend) 
+library(circlize) 
+library(fpc)
+library(robustbase)
+rm(list = ls())
+```
+
+## Loading and Preparing Data
+- Import data from a .csv file and then removes the first columns (removing non-numeric sample names from the dataset), and renames the data
+```{r}
 gs <- read.csv(file.choose())
 gs2 <- gs[,-c(1,2)]
 
 rnames <- gs[,1]
 botany_labels <- gs[,2] #label the data
+```
 
 #### Hierarchical Cluster Analysis ####
+```{r}
 rownames(gs2) <-rnames
 species_col <- rev(rainbow_hcl(3))[as.numeric(botany_labels)] #colorizes the species labels
 
@@ -37,11 +57,10 @@ tiff("test.tiff", units="in", width=6, height=6, res=600)
 plot(dend, 
      horiz =  TRUE,  nodePar = list(cex = .007))
 dev.off()
+```
 
 #### K-means clustering ####
-library(fpc)
-library(robustbase)
-
+```{r}
 df <- gs2
 
 gs2var <- df[,apply(gs2, 2, var, na.rm=TRUE) != 0] # remove unit variance columns
@@ -56,3 +75,5 @@ k2.pca <- prcomp(gs2var, retx=TRUE, center=F, scale=F)
 
 #visualize clusters
 fviz_cluster(k2, data = gs2var)
+```
+
